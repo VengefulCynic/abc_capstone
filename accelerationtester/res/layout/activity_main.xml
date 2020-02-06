@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:textSize="32sp" />
 
     <Button
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/textView1"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:text="@string/readacceleration" />
 
     <Button
@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/readacceleration"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:text="@string/setsamplerate" />
 
      <Button
@@ -41,7 +41,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/setsamplerate"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:text="@string/startmonitor" />
 
     <Button
@@ -50,6 +50,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/startmonitor"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:text="@string/stopmonitor" />               
 </RelativeLayout>
