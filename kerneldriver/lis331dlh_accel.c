@@ -1,3 +1,22 @@
+/*
+ * Kernel driver for the LIS331DLH accelerometer with interfaces for
+ * reading x, y, z accelerations via sysfs.
+ * 
+ * sys fs:
+ * Readable:
+    /sys/bus/i2c/devices/1-0018/x_axis
+      > provides string representation of the x-axis milli-g value
+      > example: 1001\n  for 1001 milli-g / 1.001 g
+      > range -2000 to 2000
+    /sys/bus/i2c/devices/1-0018/y_axis
+      > provides string representation of the y-axis milli-g value
+      > example: -1234\n  for -1234 milli-g / -1.234 g
+      > range -2000 to 2000
+    /sys/bus/i2c/devices/1-0018/z_axis
+      > provides string representation of the z-axis milli-g value
+      > example: -14\n  for -14 milli-g / -0.014 g
+      > range -2000 to 2000
+ */
 
 #include <linux/kernel.h>
 #include <linux/module.h>
