@@ -53,16 +53,22 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate startmonitor+");
-                timer = new Timer(); 
-                task = new TimerTask() 
-                { 
-                    public void run() { 
-                        // do your work
-                        Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
-                        readFiles();
-                    } 
-                }; 
-                timer.schedule(task, 0, 60*(1000*20));// execute it each 20 seconds
+                runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            timer = new Timer(); 
+                            task = new TimerTask() 
+                            { 
+                                public void run() { 
+                                    // do your work
+                                    Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
+                                    readFiles();
+                                } 
+                            }; 
+                            timer.schedule(task, 0, 60*(1000*20));// execute it each 20 seconds
+                        }
+                });
+                
                 Log.i(TAG, "onCreate startmonitor-");
             }
         });
@@ -93,7 +99,7 @@ public class MainActivity extends Activity {
         String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
         String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
         String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
-        String ret = "Read Acceleration x=" + (Double.valueOf(x)/1000) + ", y=" + (Double.valueOf(y)/1000) + ", z=" + (Double.valueOf(y)/1000);
+        String ret = "Read Acceleration x=" + (Double.valueOf(x)/1000) + ", y=" + (Double.valueOf(y)/1000) + ", z=" + (Double.valueOf(z)/1000);
         this.answerLabel.setText(ret);
         Log.i(TAG, ret);
     }
