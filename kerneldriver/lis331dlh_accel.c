@@ -9,7 +9,6 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
-#include <linux/i2c.h>
 
 
 enum lis331dlh_reg
@@ -59,21 +58,16 @@ static int accel_i2c_read(struct i2c_client *client, u8 reg, u8 *buf)
 	return 0;
 }
 
-
-
-static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
+static int accel_hex_string_read(struct i2c_client *client, u8 reg, u8 *buf)
 {
-	char test[] = "x\n\0";
-	u8 id_reg = 0;
-	int ret_val = 0;
+	int ret_val;
+	u8 reg_val = 0;
 
-	printk("%s\n", __func__);
-
-	ret_val = accel_i2c_read(accel_i2c_client, WHO_AM_I, &id_reg);
+	ret_val = accel_i2c_read(client, reg, &reg_val);
 
 	if (ret_val == 0)
 	{
-		ret_val = sprintf(buf, "%02X\n", (int)id_reg);
+		ret_val = sprintf(buf, "%02X\n", (int)reg_val);
 	}
 	else
 	{
@@ -83,22 +77,80 @@ static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, ch
 	return ret_val;
 }
 
-static ssize_t y_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
+static int accel_read_axis(struct i2c_client *client, u8 reg_h, u8 reg_l, u8 *buf)
 {
-	char test[] = "y\n\0";
+	u8 reg_val_h = 0;
+	u8 reg_val_l = 0;
+	u16 reg_val = 0;
+	s16 signed_reg_val = 0;
+	int ret_val;
+
+	ret_val = accel_i2c_read(client, reg_h, &reg_val_h);
+	if (ret_val == 0)
+	{
+		ret_val = accel_i2c_read(client, reg_l, &reg_val_l);
+		if (ret_val == 0)
+		{
+			//printk("%02X %02X\n", (int)reg_val_h, (int)reg_val_l);
+
+			reg_val = (((u16)reg_val_h) << 4) | (((u16)reg_val_l >> 4) & 0xF);
+			if (reg_val & 0x800)
+			{
+				reg_val |= 0xF000;
+			}
+			signed_reg_val = (s16)reg_val;
+		}
+	}
+
+	if (ret_val != 0)
+	{
+		sprintf(buf, "\n");
+	}
+	else
+	{
+		ret_val = sprintf(buf, "%d\n", (int)signed_reg_val);
+	}
+
+	return ret_val;
+}
+
+static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	char test[] = "x\n\0";
+	
+	int ret_val = 0;
 
 	printk("%s\n", __func__);
 
-	return sprintf(buf, "%s\n", test);
+	ret_val = accel_read_axis(accel_i2c_client, OUT_X_H, OUT_X_L, buf);
+
+	//ret_val = accel_hex_string_read(accel_i2c_client, WHO_AM_I, buf);
+
+	return ret_val;
+}
+
+static ssize_t y_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	char test[] = "y\n\0";
+	int ret_val;
+
+	printk("%s\n", __func__);
+
+	ret_val = accel_read_axis(accel_i2c_client, OUT_Y_H, OUT_Y_L, buf);
+
+	return ret_val;
 }
 
 static ssize_t z_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	char test[] = "z\n\0";
+	int ret_val;
 
 	printk("%s\n", __func__);
 
-	return sprintf(buf, "%s\n", test);
+	ret_val = accel_read_axis(accel_i2c_client, OUT_Z_H, OUT_Z_L, buf);
+
+	return ret_val;
 }
 
 static ssize_t loopback_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
@@ -140,7 +192,7 @@ static __devinit int accel_probe(struct i2c_client *client,
 	if (ret != 0)
 	{
 		pr_err("accel_probe: error %d registering device\n", ret);
-		return -errno;
+		return -EIO;
 	}
 
 	accel_i2c_client = client;
@@ -151,6 +203,7 @@ static __devinit int accel_probe(struct i2c_client *client,
 		printk("%s: error in device_create_file x axis\n", __func__);
 		return ret;
 	}
+
 	
 	ret = device_create_file(&client->dev, &dev_attr_y_axis);
 	if (ret < 0)
@@ -178,7 +231,7 @@ static void accel_deinit(void)
 
 static __devexit int accel_remove(struct i2c_client *client)
 {
-	
+
 	printk("%s\n", __func__);
 
 	accel_i2c_client = NULL;
