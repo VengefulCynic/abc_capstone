@@ -2,7 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/string.h>
-#include <linux/platform_device.h>
+#include <linux/i2c.h>
 #include <asm/io.h>
 #include <linux/delay.h>
 #include <linux/fs.h>
@@ -15,7 +15,7 @@ module_param(bps_rate, ulong, 0444);
 
 
 static int loopback_state = 0;
-
+static struct i2c_client *accel_i2c_client = NULL;
 
 static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -61,16 +61,24 @@ static ssize_t loopback_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
+static const struct i2c_device_id accel_id[] = {
+	{ "lis331dlh_accel", 0 },
+	{ }
+};
+
 
 static DEVICE_ATTR(x_axis, 0444, x_axis_show, NULL);
 
-static __devinit int accel_probe(struct platform_device *pdev)
+static __devinit int accel_probe(struct i2c_client *client,
+	    const struct i2c_device_id *id)
 {
 	int ret;
 
 	printk("%s\n", __func__);
+
+	accel_i2c_client = client;
 	
-	ret = device_create_file(&pdev->dev, &dev_attr_x_axis);
+	ret = device_create_file(&client->dev, &dev_attr_x_axis);
 	if (ret < 0)
 	{
 		printk("%s: error in device_create_file\n", __func__);
@@ -96,14 +104,16 @@ static void accel_deinit(void)
 		
 }
 
-static __devexit int accel_remove(struct platform_device *pdev)
+static __devexit int accel_remove(struct i2c_client *client)
 {
 
 	printk("%s\n", __func__);
 
+	accel_i2c_client = NULL;
+
 	accel_deinit();
 
-	device_remove_file(&pdev->dev, &dev_attr_x_axis);
+	device_remove_file(&client->dev, &dev_attr_x_axis);
 
 	//misc_deregister(&accel_device);
 
@@ -111,24 +121,29 @@ static __devexit int accel_remove(struct platform_device *pdev)
 }
 
 
-static struct platform_driver accel_driver = {
-	.probe = accel_probe,
-	.remove = __devexit_p(accel_remove),
+
+static struct i2c_driver accel_driver = {
 	.driver = {
-		.name = "lis331dlh_accel",
+		.name	= "lis331dlh_accel",
 		.owner = THIS_MODULE
 	},
+	.probe		= accel_probe,
+	.remove		= accel_remove,
+	.id_table	= accel_id,
 };
-
-
 
 /***********************************************
  * accel_init
  ***********************************************/
 static int __init accel_init(void)
 {
+	int ret;
+
 	printk("%s\n", __func__);
-	return platform_driver_register(&accel_driver);
+
+	ret = i2c_add_driver(&accel_driver);
+
+	return ret;
 }
 
 /***********************************************
@@ -137,7 +152,7 @@ static int __init accel_init(void)
 static void __exit accel_exit(void)
 {
 	printk("%s\n", __func__);
-	platform_driver_unregister(&accel_driver);
+	i2c_del_driver(&accel_driver);
 	return;
 }
 
