@@ -1,6 +1,7 @@
 package com.capstone.accelerationtester;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.app.Activity;
 import android.view.Menu;
 import android.view.View;
@@ -15,6 +16,7 @@ import java.util.TimerTask;
 public class MainActivity extends Activity { 
     private static final String TAG = MainActivity.class.getSimpleName() + " ";
     private Timer timer;
+    private Boolean monitorRunning=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,11 +32,7 @@ public class MainActivity extends Activity {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate readacceleration onClick+");
                     
-                String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
-                String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
-                String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
-                Log.i(TAG, "onCreate readacceleration- x=" + x + ", y=" + y + ", z=" + z);
-                    
+                log_acceleration();          
             }
         });
 
@@ -52,8 +50,23 @@ public class MainActivity extends Activity {
         startmonitor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate startmonitor+");
+                if(!monitorRunning)
+                {
+                    Log.i(TAG, "onCreate startmonitor+");
+
+                    // Create the Handler object (on the main thread by default)
+                    Handler handler = new Handler();
+
+                    // Start the initial runnable task by posting through the handler
+                    handler.post(runnableCode);
+
+                    monitorRunning = true;
+                }
+                else
+                {
+                    Log.i(TAG, "startmonitor - the monitor is already running, knock it off!");                    
+                }
+                
             }
         });
 
@@ -61,8 +74,20 @@ public class MainActivity extends Activity {
         stopmonitor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate stopmonitor+");
+
+                if(monitorRunning)
+                {
+                    Log.i(TAG, "onCreate stopmonitor+");
+
+                    // Removes pending code execution
+                    handler.removeCallbacks(runnableCode);
+
+                    monitorRunning = false;
+                }
+                else
+                {
+                    Log.i(TAG, "stopmonitor - the monitor isn't running yet, knock it off!");                    
+                }
             }
         });
     }
@@ -99,5 +124,23 @@ public class MainActivity extends Activity {
         return text.toString();
     }
 
-    
+// Define the code block to be executed
+private Runnable runnableCode = new Runnable() {
+    @Override
+    public void run() {
+      log_acceleration();
+      // Repeat this the same runnable code block again another 2 seconds
+      // 'this' is referencing the Runnable object
+      handler.postDelayed(this, 500);
+    }
+};
+
+private void log_acceleration()
+{
+    String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
+    String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
+    String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
+    Log.i(TAG, "onCreate readacceleration- x=" + x + ", y=" + y + ", z=" + z);ß
+}
+
 }
