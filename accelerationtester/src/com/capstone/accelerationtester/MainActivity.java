@@ -1,7 +1,6 @@
 package com.capstone.accelerationtester;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.app.Activity;
 import android.view.Menu;
 import android.view.View;
@@ -16,7 +15,7 @@ import java.util.TimerTask;
 public class MainActivity extends Activity { 
     private static final String TAG = MainActivity.class.getSimpleName() + " ";
     private Timer timer;
-    private Boolean monitorRunning=false;
+    private TimerTask task;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +30,9 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate readacceleration onClick+");
+                answerLabel.setText(readFiles());
+                Log.i(TAG, "onCreate readacceleration onClick-");
                     
-                log_acceleration();          
             }
         });
 
@@ -50,23 +50,19 @@ public class MainActivity extends Activity {
         startmonitor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!monitorRunning)
-                {
-                    Log.i(TAG, "onCreate startmonitor+");
-
-                    // Create the Handler object (on the main thread by default)
-                    Handler handler = new Handler();
-
-                    // Start the initial runnable task by posting through the handler
-                    handler.post(runnableCode);
-
-                    monitorRunning = true;
-                }
-                else
-                {
-                    Log.i(TAG, "startmonitor - the monitor is already running, knock it off!");                    
-                }
-                
+                // TODO Auto-generated method stub
+                Log.i(TAG, "onCreate startmonitor+");
+                timer = new Timer(); 
+                task = new TimerTask() 
+                { 
+                    public void run() { 
+                        // do your work
+                        Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
+                        answerLabel.setText(readFiles());
+                    } 
+                }; 
+                timer.schedule(task, 0, 60*(1000*20));// execute it each 20 seconds
+                Log.i(TAG, "onCreate startmonitor-");
             }
         });
 
@@ -74,20 +70,12 @@ public class MainActivity extends Activity {
         stopmonitor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                if(monitorRunning)
-                {
-                    Log.i(TAG, "onCreate stopmonitor+");
-
-                    // Removes pending code execution
-                    handler.removeCallbacks(runnableCode);
-
-                    monitorRunning = false;
-                }
-                else
-                {
-                    Log.i(TAG, "stopmonitor - the monitor isn't running yet, knock it off!");                    
-                }
+                // TODO Auto-generated method stub
+                Log.i(TAG, "onCreate stopmonitor+");
+                task.cancel();
+                timer.cancel();
+                timer.purge();
+                Log.i(TAG, "onCreate stopmonitor-");
             }
         });
     }
@@ -98,6 +86,15 @@ public class MainActivity extends Activity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
+    }
+
+    public String readFiles() {
+        String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
+        String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
+        String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
+        String ret = "Read Acceleration x=" + (Double.valueOf(x)/1000) + ", y=" + (Double.valueOf(y)/1000) + ", z=" + (Double.valueOf(y)/1000);
+        Log.i(TAG, ret);
+        return ret;
     }
 
     public String readFile(String path) {
@@ -124,23 +121,5 @@ public class MainActivity extends Activity {
         return text.toString();
     }
 
-// Define the code block to be executed
-private Runnable runnableCode = new Runnable() {
-    @Override
-    public void run() {
-      log_acceleration();
-      // Repeat this the same runnable code block again another 2 seconds
-      // 'this' is referencing the Runnable object
-      handler.postDelayed(this, 500);
-    }
-};
-
-private void log_acceleration()
-{
-    String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
-    String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
-    String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
-    Log.i(TAG, "onCreate readacceleration- x=" + x + ", y=" + y + ", z=" + z);ß
-}
-
+    
 }
