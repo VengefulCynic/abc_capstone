@@ -9,6 +9,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/i2c.h>
 
 
 enum lis331dlh_reg
@@ -134,6 +135,14 @@ static __devinit int accel_probe(struct i2c_client *client,
 
 	printk("%s\n", __func__);
 
+	//power on and enable X, Y, Z
+	ret = i2c_smbus_write_byte_data(client, CTRL_1, 0x27); // 00100111
+	if (ret != 0)
+	{
+		pr_err("accel_probe: error %d registering device\n", ret);
+		return -errno;
+	}
+
 	accel_i2c_client = client;
 	
 	ret = device_create_file(&client->dev, &dev_attr_x_axis);
@@ -142,7 +151,6 @@ static __devinit int accel_probe(struct i2c_client *client,
 		printk("%s: error in device_create_file x axis\n", __func__);
 		return ret;
 	}
-
 	
 	ret = device_create_file(&client->dev, &dev_attr_y_axis);
 	if (ret < 0)
@@ -170,7 +178,7 @@ static void accel_deinit(void)
 
 static __devexit int accel_remove(struct i2c_client *client)
 {
-
+	
 	printk("%s\n", __func__);
 
 	accel_i2c_client = NULL;
