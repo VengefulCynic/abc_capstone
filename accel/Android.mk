@@ -1,0 +1,12 @@
+ifeq ($(TARGET_PRODUCT),full_barrometer)
+
+LOCAL_PATH := $(call my-dir)
+include $(CLEAR_VARS)
+LOCAL_MODULE := lis331dlh_accel.ko
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+LOCAL_MODULE_CLASS := EXECUTABLE
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/modules
+include $(BUILD_PREBUILT)
+
+endif
