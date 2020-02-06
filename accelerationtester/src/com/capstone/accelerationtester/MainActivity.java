@@ -11,6 +11,9 @@ import android.widget.TextView;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+
 public class MainActivity extends Activity { 
     private static final String TAG = MainActivity.class.getSimpleName() + " ";
     private Timer timer;
@@ -61,8 +64,27 @@ public class MainActivity extends Activity {
                 { 
                     public void run() { 
                         // do your work
+                        private static final String X_AXIS = "/sys/bus/i2c/devices/1-0018/x_axis";
+                        private static final String Y_AXIS = "/sys/bus/i2c/devices/1-0018/y_axis";
+                        private static final String Z_AXIS = "/sys/bus/i2c/devices/1-0018/z_axis";
+                        FileInputStream xin = new FileInputStream(X_AXIS);
+                        byte[] bytes = new byte[2];
+                        double raw_x = xin.read(byes, 0, 2);
+                        xin.close();
+                        
+                        FileInputStream yin = new FileInputStream(Y_AXIS);
+                        byte[] bytes = new byte[2];
+                        double raw_y = yin.read(byes, 0, 2);
+                        yin.close();
+
+                        FileInputStream zin = new FileInputStream(Z_AXIS);
+                        byte[] bytes = new byte[2];
+                        double raw_z = zin.read(byes, 0, 2);
+                        zin.close();
+                        
                         Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
                         int d = manager.readAcceleration();
+
                         Log.i(TAG, "readAcceleration = " + d);
                         //String answer = "Clicked Read Acceleration";
                         //answerLabel.setText(answer);
