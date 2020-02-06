@@ -8,7 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.util.Log;
 
-import java.io.*; 
+import java.io.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -29,37 +29,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate readacceleration onClick+");
-
-                String X_AXIS = "/sys/bus/i2c/devices/1-0018/x_axis";
-                String Y_AXIS = "/sys/bus/i2c/devices/1-0018/y_axis";
-                String Z_AXIS = "/sys/bus/i2c/devices/1-0018/z_axis";
-
-               
-
-                    String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
-                    String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
-                    String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
-                
-
-                    Log.i(TAG, "onCreate readacceleration onClick+ x=" + x + ", y=" + y + ", z=" + z);
-
-                    /*FileInputStream xin = new FileInputStream(X_AXIS);
-                    byte[] bytesx = new byte[2];
-                    double raw_x = xin.read(bytesx, 0, 2);
-                    xin.close();
                     
-                    FileInputStream yin = new FileInputStream(Y_AXIS);
-                    byte[] bytesy = new byte[2];
-                    double raw_y = yin.read(bytesy, 0, 2);
-                    yin.close();
-
-                    FileInputStream zin = new FileInputStream(Z_AXIS);
-                    byte[] bytesz = new byte[2];
-                    double raw_z = zin.read(bytesz, 0, 2);
-                    zin.close();
-
-                    Log.i(TAG, "onCreate readacceleration- x=" + raw_x + ", y=" + raw_y + ", z=" + raw_z); */
-
+                String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
+                String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
+                String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
+                Log.i(TAG, "onCreate readacceleration- x=" + x + ", y=" + y + ", z=" + z);
+                    
             }
         });
 
@@ -101,19 +76,28 @@ public class MainActivity extends Activity {
     }
 
     public String readFile(String path) {
+        //Get the text file
+        File file = new File(path);
+
+        //Read text from file
+        StringBuilder text = new StringBuilder();
+
         try {
-            File file = new File(path); 
-            BufferedReader br = new BufferedReader(new FileReader(file)); 
-            String st; 
-            while ((st = br.readLine()) != null) {
-                //Log.i(TAG, " val = " + st);
-            } 
-            return st;
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                text.append(line);
+                text.append('\n');
+            }
+            br.close();
         }
-        catch(IOException ie)
-        {
-            Log.i(TAG, "Error "+ ie);
+        catch (IOException e) {
+            //You'll need to add proper error handling here
+            Log.i(TAG, "Error "+ e);
         }
-        return null;
+        return text.toString();
     }
+
+    
 }
