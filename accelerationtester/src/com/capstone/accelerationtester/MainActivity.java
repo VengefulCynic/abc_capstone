@@ -1,18 +1,16 @@
 package com.capstone.accelerationtester;
 
-//import android.os.AccelerometerManager; 
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.util.Log;
 
+import java.io.*; 
 import java.util.Timer;
 import java.util.TimerTask;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 
 public class MainActivity extends Activity { 
     private static final String TAG = MainActivity.class.getSimpleName() + " ";
@@ -22,8 +20,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
-        AccelerometerManager manager = (AccelerometerManager) getSystemService ("AccelerometerManager");
 
         final TextView answerLabel = (TextView) findViewById(R.id.textView1);
 
@@ -32,11 +28,38 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate readacceleration onClick");
-                int d = manager.readAcceleration();
-                Log.i(TAG, "readAcceleration = " + d);
-                //String answer = "Clicked Read Acceleration"; 
-                //answerLabel.setText(answer);
+                Log.i(TAG, "onCreate readacceleration onClick+");
+
+                String X_AXIS = "/sys/bus/i2c/devices/1-0018/x_axis";
+                String Y_AXIS = "/sys/bus/i2c/devices/1-0018/y_axis";
+                String Z_AXIS = "/sys/bus/i2c/devices/1-0018/z_axis";
+
+               
+
+                    String x = readFile("/sys/bus/i2c/devices/1-0018/x_axis");
+                    String y = readFile("/sys/bus/i2c/devices/1-0018/y_axis");
+                    String z = readFile("/sys/bus/i2c/devices/1-0018/z_axis");
+                
+
+                    Log.i(TAG, "onCreate readacceleration onClick+ x=" + x + ", y=" + y + ", z=" + z);
+
+                    /*FileInputStream xin = new FileInputStream(X_AXIS);
+                    byte[] bytesx = new byte[2];
+                    double raw_x = xin.read(bytesx, 0, 2);
+                    xin.close();
+                    
+                    FileInputStream yin = new FileInputStream(Y_AXIS);
+                    byte[] bytesy = new byte[2];
+                    double raw_y = yin.read(bytesy, 0, 2);
+                    yin.close();
+
+                    FileInputStream zin = new FileInputStream(Z_AXIS);
+                    byte[] bytesz = new byte[2];
+                    double raw_z = zin.read(bytesz, 0, 2);
+                    zin.close();
+
+                    Log.i(TAG, "onCreate readacceleration- x=" + raw_x + ", y=" + raw_y + ", z=" + raw_z); */
+
             }
         });
 
@@ -45,11 +68,8 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate setsamplerate onClick");
-                int d = manager.readAcceleration();
-                Log.i(TAG, "setsamplerate = " + d);
-                //String answer = "Clicked on Set Sample Rate"; 
-                //answerLabel.setText(answer);
+                Log.i(TAG, "onCreate setsamplerate+");
+                
             }
         });
 
@@ -58,41 +78,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate startmonitor onClick");
-                timer = new Timer(); 
-                task = new TimerTask() 
-                { 
-                    public void run() { 
-                        // do your work
-                        private static final String X_AXIS = "/sys/bus/i2c/devices/1-0018/x_axis";
-                        private static final String Y_AXIS = "/sys/bus/i2c/devices/1-0018/y_axis";
-                        private static final String Z_AXIS = "/sys/bus/i2c/devices/1-0018/z_axis";
-                        FileInputStream xin = new FileInputStream(X_AXIS);
-                        byte[] bytes = new byte[2];
-                        double raw_x = xin.read(byes, 0, 2);
-                        xin.close();
-                        
-                        FileInputStream yin = new FileInputStream(Y_AXIS);
-                        byte[] bytes = new byte[2];
-                        double raw_y = yin.read(byes, 0, 2);
-                        yin.close();
-
-                        FileInputStream zin = new FileInputStream(Z_AXIS);
-                        byte[] bytes = new byte[2];
-                        double raw_z = zin.read(byes, 0, 2);
-                        zin.close();
-                        
-                        Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
-                        int d = manager.readAcceleration();
-
-                        Log.i(TAG, "readAcceleration = " + d);
-                        //String answer = "Clicked Read Acceleration";
-                        //answerLabel.setText(answer);
-                    } 
-                }; 
-                timer.schedule(task, 0, 60*(1000*20));// execute it each 20 seconds
-                String answer = "Clicked on Start Monitor"; 
-                answerLabel.setText(answer);
+                Log.i(TAG, "onCreate startmonitor+");
             }
         });
 
@@ -101,12 +87,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                Log.i(TAG, "onCreate stopmonitor onClick");
-                task.cancel();  // Stop the task
-                timer.cancel();  //Terminates this timer,discarding any currently scheduled tasks.
-                timer.purge();   // Removes all cancelled tasks from this timer's task queue.
-                //String answer = "Clicked on Stop Monitor"; 
-                //answerLabel.setText(answer);
+                Log.i(TAG, "onCreate stopmonitor+");
             }
         });
     }
@@ -120,11 +101,19 @@ public class MainActivity extends Activity {
     }
 
     public String readFile(String path) {
-        File file = new File(path); 
-        BufferedReader br = new BufferedReader(new FileReader(file)); 
-        String st; 
-        while ((st = br.readLine()) != null) 
-            System.out.println(st); 
-        } 
-    }   
+        try {
+            File file = new File(path); 
+            BufferedReader br = new BufferedReader(new FileReader(file)); 
+            String st; 
+            while ((st = br.readLine()) != null) {
+                //Log.i(TAG, " val = " + st);
+            } 
+            return st;
+        }
+        catch(IOException ie)
+        {
+            Log.i(TAG, "Error "+ ie);
+        }
+        return null;
+    }
 }
