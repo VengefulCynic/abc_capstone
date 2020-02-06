@@ -1,0 +1,26 @@
+enum lis331dlh_reg
+{
+    WHO_AM_I = 0x0F,
+    CTRL_1 = 0x20,
+    CTRL_2 = 0X21,
+    CTRL_3 = 0X22,
+    CTRL_4 = 0X23,
+    CTRL_5 = 0X24,
+    HP_FILTER_RESET = 0X25,
+    REFERENCE = 0X26,
+    STATUS = 0X27,
+    OUT_X_L = 0X28,
+    OUT_X_H = 0X29,
+    OUT_Y_L = 0X2A,
+    OUT_Y_H = 0X2B,
+    OUT_Z_L = 0X2C,
+    OUT_Z_H = 0X2D,
+    INT1_CFG = 0X30,
+    INT1_SOURCE = 0X31,
+    INT1_THS = 0X32,
+    INT1_DURATION = 0X33,
+    INT2_CFG = 0X34,
+    INT2_SOURCE = 0X35,
+    INT2_THS = 0X36,
+    INT2_DURATION = 0X37
+}
