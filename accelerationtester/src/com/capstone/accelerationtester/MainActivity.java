@@ -43,6 +43,14 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate setsamplerate+");
+
+                try {
+                    FileWriter writer = new FileWriter("/sys/bus/i2c/devices/1-0018/sample_rate", true);
+                    writer.write("50\n");
+                    writer.close();
+                } catch (IOException e) {
+                    Log.i(TAG, "Error "+ e);
+                }
                 
             }
         });
@@ -53,22 +61,21 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 // TODO Auto-generated method stub
                 Log.i(TAG, "onCreate startmonitor+");
-                runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            timer = new Timer(); 
-                            task = new TimerTask() 
-                            { 
-                                public void run() { 
-                                    // do your work
-                                    Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
-                                    readFiles();
-                                } 
-                            }; 
-                            timer.schedule(task, 0, 60*(1000*20));// execute it each 20 seconds
-                        }
-                });
-                
+                timer = new Timer(); 
+                task = new TimerTask() 
+                { 
+                    public void run() { 
+                        // do your work
+                        Log.i(TAG, "onCreate startmonitor onClick task to schedule a readAccelerometer() each 20 seconds");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                readFiles();
+                            }
+                        });
+                    } 
+                }; 
+                timer.schedule(task, 0, 200);// execute it each 20 seconds
                 Log.i(TAG, "onCreate startmonitor-");
             }
         });
