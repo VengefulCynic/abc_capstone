@@ -16,6 +16,12 @@
       > provides string representation of the z-axis milli-g value
       > example: -14\n  for -14 milli-g / -0.014 g
       > range -2000 to 2000
+
+   Writable / Readable:
+    /sys/bus/i2c/devices/1-0018/sample_rate
+      > provides ability to set or get sample rate in Hz
+      > example: 50\n for 50Hz
+      > values: 0, 0.5, 1, 2, 5, 10, 50, 100, 400, 1000
  */
 
 #include <linux/kernel.h>
@@ -57,6 +63,25 @@ enum lis331dlh_reg
     INT2_DURATION = 0X37
 };
 
+enum lis331dlh_pm_t
+{
+    LIS331DLH_PM_POWER_DOWN = 0x00,
+    LIS331DLH_PM_NORMAL = 0x01,
+    LIS331DLH_PM_LOW_POWER_0_5HZ = 0x02,
+    LIS331DLH_PM_LOW_POWER_1HZ = 0x03,
+    LIS331DLH_PM_LOW_POWER_2HZ = 0x04,
+    LIS331DLH_PM_LOW_POWER_5HZ = 0x05,
+    LIS331DLH_PM_LOW_POWER_10HZ = 0x06,
+};
+
+enum lis331dlh_dr_t
+{
+    LIS331DLH_DR_50HZ = 0x00,
+    LIS331DLH_DR_100HZ = 0x01,
+    LIS331DLH_DR_400HZ = 0x02,
+    LIS331DLH_DR_1000HZ = 0x03,
+};
+
 static unsigned long bps_rate = 115200;
 module_param(bps_rate, ulong, 0444);
 
@@ -77,24 +102,6 @@ static int accel_i2c_read(struct i2c_client *client, u8 reg, u8 *buf)
 	return 0;
 }
 
-static int accel_hex_string_read(struct i2c_client *client, u8 reg, u8 *buf)
-{
-	int ret_val;
-	u8 reg_val = 0;
-
-	ret_val = accel_i2c_read(client, reg, &reg_val);
-
-	if (ret_val == 0)
-	{
-		ret_val = sprintf(buf, "%02X\n", (int)reg_val);
-	}
-	else
-	{
-		sprintf(buf, "\n");
-	}
-
-	return ret_val;
-}
 
 static int accel_read_axis(struct i2c_client *client, u8 reg_h, u8 reg_l, u8 *buf)
 {
@@ -113,6 +120,8 @@ static int accel_read_axis(struct i2c_client *client, u8 reg_h, u8 reg_l, u8 *bu
 			//printk("%02X %02X\n", (int)reg_val_h, (int)reg_val_l);
 
 			reg_val = (((u16)reg_val_h) << 4) | (((u16)reg_val_l >> 4) & 0xF);
+
+			/* Sign extend if negative */
 			if (reg_val & 0x800)
 			{
 				reg_val |= 0xF000;
@@ -135,8 +144,6 @@ static int accel_read_axis(struct i2c_client *client, u8 reg_h, u8 reg_l, u8 *bu
 
 static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char test[] = "x\n\0";
-	
 	int ret_val = 0;
 
 	printk("%s\n", __func__);
@@ -150,7 +157,6 @@ static ssize_t x_axis_show(struct device *dev, struct device_attribute *attr, ch
 
 static ssize_t y_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char test[] = "y\n\0";
 	int ret_val;
 
 	printk("%s\n", __func__);
@@ -162,7 +168,6 @@ static ssize_t y_axis_show(struct device *dev, struct device_attribute *attr, ch
 
 static ssize_t z_axis_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char test[] = "z\n\0";
 	int ret_val;
 
 	printk("%s\n", __func__);
@@ -172,18 +177,149 @@ static ssize_t z_axis_show(struct device *dev, struct device_attribute *attr, ch
 	return ret_val;
 }
 
-static ssize_t loopback_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t sample_rate_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	printk("loopback store = %s", buf);
+	int ret_val;
+	u8 register_value = 0;
+	enum lis331dlh_pm_t power_mode = LIS331DLH_PM_POWER_DOWN;
+	enum lis331dlh_dr_t data_rate = LIS331DLH_DR_50HZ;
 
-	if (strcmp(buf, "on\n") == 0)
+	printk("%s\n", __func__);
+
+	ret_val = accel_i2c_read(accel_i2c_client, CTRL_1, &register_value);
+	if (ret_val != 0)
 	{
-		//loopback_state = 1;
+		pr_err("sample_rate_show: error %d registering device\n", ret_val);
+		return -EIO;
 	}
-	else if (strcmp(buf, "off\n") == 0)
+
+	power_mode = (register_value & 0xE0) >> 5;
+
+	if (power_mode == LIS331DLH_PM_POWER_DOWN)
 	{
-		printk("loopback store set off\n");
-		//loopback_state = 0;
+		ret_val = sprintf(buf, "0\n");
+	}
+	else if (power_mode == LIS331DLH_PM_NORMAL)
+	{
+		data_rate = (register_value & 0x18) >> 3;
+		if (data_rate == LIS331DLH_DR_50HZ)
+		{
+			ret_val = sprintf(buf, "50\n");
+		}
+		else if (data_rate == LIS331DLH_DR_100HZ)
+		{
+			ret_val = sprintf(buf, "100\n");
+		}
+		else if (data_rate == LIS331DLH_DR_400HZ)
+		{
+			ret_val = sprintf(buf, "400\n");
+		}
+		else
+		{
+			ret_val = sprintf(buf, "1000\n");
+		}
+	}
+	else if (power_mode == LIS331DLH_PM_LOW_POWER_0_5HZ)
+	{
+		ret_val = sprintf(buf, "0.5\n");
+	}
+	else if (power_mode == LIS331DLH_PM_LOW_POWER_1HZ)
+	{
+		ret_val = sprintf(buf, "1\n");
+	}
+	else if (power_mode == LIS331DLH_PM_LOW_POWER_2HZ)
+	{
+		ret_val = sprintf(buf, "2\n");
+	}
+	else if (power_mode == LIS331DLH_PM_LOW_POWER_5HZ)
+	{
+		ret_val = sprintf(buf, "5\n");
+	}
+	else
+	{
+		// 10Hz
+		ret_val = sprintf(buf, "10\n");
+	}
+
+	return ret_val;
+}
+
+
+static ssize_t sample_rate_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	enum lis331dlh_pm_t power_mode = LIS331DLH_PM_POWER_DOWN;
+	enum lis331dlh_dr_t data_rate = LIS331DLH_DR_50HZ;
+	u8 register_value = 0;
+	int ret_val = 0;
+
+	printk("sample_rate_store = %s", buf);
+
+	if (strcmp("0\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_POWER_DOWN;
+	}
+	else if (strcmp("50\n", buf) == 0)
+	{
+		//norm
+		power_mode = LIS331DLH_PM_NORMAL;
+	}
+	else if (strcmp("100\n", buf) == 0)
+	{
+		//norm
+		power_mode = LIS331DLH_PM_NORMAL;
+		data_rate = LIS331DLH_DR_100HZ;
+	}
+	else if (strcmp("400\n", buf) == 0)
+	{
+		//norm
+		power_mode = LIS331DLH_PM_NORMAL;
+		data_rate = LIS331DLH_DR_400HZ;
+	}
+	else if (strcmp("1000\n", buf) == 0)
+	{
+		//norm		
+		power_mode = LIS331DLH_PM_NORMAL;
+		data_rate = LIS331DLH_DR_1000HZ;
+	}
+	else if (strcmp("0.5\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_LOW_POWER_0_5HZ;
+	}
+	else if (strcmp("1\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_LOW_POWER_1HZ;
+	}
+	else if (strcmp("2\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_LOW_POWER_2HZ;
+	}
+	else if (strcmp("5\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_LOW_POWER_5HZ;
+	}
+	else if (strcmp("10\n", buf) == 0)
+	{
+		power_mode = LIS331DLH_PM_LOW_POWER_10HZ;
+	}
+	else
+	{
+		return -EINVAL;
+	}
+
+
+	ret_val = accel_i2c_read(accel_i2c_client, CTRL_1, &register_value);
+	if (ret_val != 0)
+	{
+		pr_err("sample_rate_store: error %d reading device\n", ret_val);
+		return -EIO;
+	}
+
+	register_value = (register_value & 0x07) | (power_mode << 5) | (data_rate << 3);
+	ret_val = i2c_smbus_write_byte_data(accel_i2c_client, CTRL_1, register_value);
+	if (ret_val != 0)
+	{
+		pr_err("sample_rate_store: error %d writing device\n", ret_val);
+		return -EIO;
 	}
 
 	return count;
@@ -198,6 +334,7 @@ static const struct i2c_device_id accel_id[] = {
 static DEVICE_ATTR(x_axis, 0444, x_axis_show, NULL);
 static DEVICE_ATTR(y_axis, 0444, y_axis_show, NULL);
 static DEVICE_ATTR(z_axis, 0444, z_axis_show, NULL);
+static DEVICE_ATTR(sample_rate, 0666, sample_rate_show, sample_rate_store);
 
 static __devinit int accel_probe(struct i2c_client *client,
 	    const struct i2c_device_id *id)
@@ -238,6 +375,13 @@ static __devinit int accel_probe(struct i2c_client *client,
 		return ret;
 	}
 
+	ret = device_create_file(&client->dev, &dev_attr_sample_rate);
+	if (ret < 0)
+	{
+		printk("%s: error in device_create_file sample_rate\n", __func__);
+		return ret;
+	}
+
 	return ret;
 }
 
@@ -262,6 +406,8 @@ static __devexit int accel_remove(struct i2c_client *client)
 	device_remove_file(&client->dev, &dev_attr_y_axis);
 
 	device_remove_file(&client->dev, &dev_attr_z_axis);
+
+	device_remove_file(&client->dev, &dev_attr_sample_rate);
 
 	//misc_deregister(&accel_device);
 
